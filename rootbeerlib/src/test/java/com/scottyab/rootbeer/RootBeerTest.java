@@ -21,6 +21,7 @@ public class RootBeerTest {
 
     @Test
     public void testIsRooted() {
+        RootBeerNative rootBeerNative = new RootBeerNative();
 
         RootBeer rootBeer = Mockito.mock(RootBeer.class);
 
@@ -28,7 +29,7 @@ public class RootBeerTest {
 
         when(rootBeer.detectRootManagementApps()).thenReturn(false);
         when(rootBeer.detectPotentiallyDangerousApps()).thenReturn(false);
-        when(rootBeer.checkForBinary(Const.BINARY_SU)).thenReturn(false);
+        when(rootBeer.checkForBinary(rootBeerNative.getBinarySu())).thenReturn(false);
         when(rootBeer.checkForDangerousProps()).thenReturn(false);
         when(rootBeer.checkForRWPaths()).thenReturn(false);
         when(rootBeer.detectTestKeys()).thenReturn(false);
@@ -46,14 +47,15 @@ public class RootBeerTest {
 
     @Test
     public void testIsRootedWithBusyBoxCheck() {
+        RootBeerNative rootBeerNative = new RootBeerNative();
 
         RootBeer rootBeer = Mockito.mock(RootBeer.class);
 
         when(rootBeer.isRooted()).thenCallRealMethod();
         when(rootBeer.detectRootManagementApps()).thenReturn(false);
         when(rootBeer.detectPotentiallyDangerousApps()).thenReturn(false);
-        when(rootBeer.checkForBinary(Const.BINARY_BUSYBOX)).thenReturn(true);
-        when(rootBeer.checkForBinary(Const.BINARY_SU)).thenReturn(false);
+        when(rootBeer.checkForBinary(rootBeerNative.getBinaryBusybox())).thenReturn(true);
+        when(rootBeer.checkForBinary(rootBeerNative.getBinarySu())).thenReturn(false);
         when(rootBeer.checkForDangerousProps()).thenReturn(false);
         when(rootBeer.checkForRWPaths()).thenReturn(false);
         when(rootBeer.detectTestKeys()).thenReturn(false);
@@ -64,7 +66,7 @@ public class RootBeerTest {
         assertFalse(rootBeer.isRooted());
 
         // Check busybox present is detected
-        assertTrue(rootBeer.checkForBinary(Const.BINARY_BUSYBOX));
+        assertTrue(rootBeer.checkForBinary(rootBeerNative.getBinaryBusybox()));
     }
 
     @Test
@@ -109,6 +111,7 @@ public class RootBeerTest {
 
     @Test
     public void testDetectPotentiallyDangerousApps() throws Exception {
+        RootBeerNative rootBeerNative = new RootBeerNative();
 
         RootBeer rootBeer = new RootBeer(getMockedContext(null));
         rootBeer.setLogging(false);
@@ -116,7 +119,7 @@ public class RootBeerTest {
         // Should be false as no packages detected
         assertFalse(rootBeer.detectPotentiallyDangerousApps());
 
-        rootBeer = new RootBeer(getMockedContext(Const.knownDangerousAppsPackages[0]));
+        rootBeer = new RootBeer(getMockedContext(rootBeerNative.knownDangerousAppsPackages()[0]));
         rootBeer.setLogging(false);
 
         // Should be true as package detected
@@ -126,14 +129,14 @@ public class RootBeerTest {
 
     @Test
     public void testDetectRootManagementApps() throws Exception {
-
+        RootBeerNative rootBeerNative = new RootBeerNative();
         RootBeer rootBeer = new RootBeer(getMockedContext(null));
         rootBeer.setLogging(false);
 
         // Should be false as no packages detected
         assertFalse(rootBeer.detectRootManagementApps());
 
-        rootBeer = new RootBeer(getMockedContext(Const.knownRootAppsPackages[0]));
+        rootBeer = new RootBeer(getMockedContext(rootBeerNative.knownRootAppsPackages()[0]));
         rootBeer.setLogging(false);
 
         // Should be true as package detected
@@ -143,6 +146,7 @@ public class RootBeerTest {
 
     @Test
     public void testDetectRootCloakingApps() throws Exception {
+        RootBeerNative rootBeerNative = new RootBeerNative();
 
         RootBeer rootBeer = new RootBeer(getMockedContext(null));
         rootBeer.setLogging(false);
@@ -150,18 +154,11 @@ public class RootBeerTest {
         // Should be false as no packages detected
         assertFalse(rootBeer.detectRootCloakingApps());
 
-        rootBeer = new RootBeer(getMockedContext(Const.knownRootCloakingPackages[0]));
+        rootBeer = new RootBeer(getMockedContext(rootBeerNative.knownRootCloakingPackages()[0]));
         rootBeer.setLogging(false);
 
         // Should be true as package detected
         assertTrue(rootBeer.detectRootCloakingApps());
-    }
-
-    @Test
-    public void testAllSuPathsEndWithSlash() {
-        for (String path : Const.getPaths()) {
-            assertTrue(path.endsWith("/"));
-        }
     }
 
 }

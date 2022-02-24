@@ -18,8 +18,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
-import static com.scottyab.rootbeer.Const.BINARY_BUSYBOX;
-import static com.scottyab.rootbeer.Const.BINARY_SU;
 
 /**
  * A simple root checker that gives an *indication* if the device is rooted or not.
@@ -40,8 +38,8 @@ public class RootBeer {
      * @return true, we think there's a good *indication* of root | false good *indication* of no root (could still be cloaked)
      */
     public boolean isRooted() {
-
-        return detectRootManagementApps() || detectPotentiallyDangerousApps() || checkForBinary(BINARY_SU)
+        RootBeerNative beerNative = new RootBeerNative();
+        return detectRootManagementApps() || detectPotentiallyDangerousApps() || checkForBinary(RootBeerNative.getBinarySu())
                 || checkForDangerousProps() || checkForRWPaths()
                 || detectTestKeys() || checkSuExists() || checkForRootNative() || checkForMagiskBinary();
     }
@@ -63,8 +61,8 @@ public class RootBeer {
      */
     public boolean isRootedWithBusyBoxCheck() {
 
-        return detectRootManagementApps() || detectPotentiallyDangerousApps() || checkForBinary(BINARY_SU)
-                || checkForBinary(BINARY_BUSYBOX) || checkForDangerousProps() || checkForRWPaths()
+        return detectRootManagementApps() || detectPotentiallyDangerousApps() || checkForBinary(RootBeerNative.getBinarySu())
+                || checkForBinary(RootBeerNative.getBinaryBusybox()) || checkForDangerousProps() || checkForRWPaths()
                 || detectTestKeys() || checkSuExists() || checkForRootNative() || checkForMagiskBinary();
     }
 
@@ -95,7 +93,7 @@ public class RootBeer {
     public boolean detectRootManagementApps(String[] additionalRootManagementApps) {
 
         // Create a list of package names to iterate over from constants any others provided
-        ArrayList<String> packages = new ArrayList<>(Arrays.asList(Const.knownRootAppsPackages));
+        ArrayList<String> packages = new ArrayList<>(Arrays.asList(RootBeerNative.knownRootAppsPackages()));
         if (additionalRootManagementApps!=null && additionalRootManagementApps.length>0){
             packages.addAll(Arrays.asList(additionalRootManagementApps));
         }
@@ -120,7 +118,7 @@ public class RootBeer {
 
         // Create a list of package names to iterate over from constants any others provided
         ArrayList<String> packages = new ArrayList<>();
-        packages.addAll(Arrays.asList(Const.knownDangerousAppsPackages));
+        packages.addAll(Arrays.asList(RootBeerNative.knownDangerousAppsPackages()));
         if (additionalDangerousApps!=null && additionalDangerousApps.length>0){
             packages.addAll(Arrays.asList(additionalDangerousApps));
         }
@@ -145,7 +143,7 @@ public class RootBeer {
     public boolean detectRootCloakingApps(String[] additionalRootCloakingApps) {
 
         // Create a list of package names to iterate over from constants any others provided
-        ArrayList<String> packages = new ArrayList<>(Arrays.asList(Const.knownRootCloakingPackages));
+        ArrayList<String> packages = new ArrayList<>(Arrays.asList(RootBeerNative.knownRootCloakingPackages()));
         if (additionalRootCloakingApps!=null && additionalRootCloakingApps.length>0){
             packages.addAll(Arrays.asList(additionalRootCloakingApps));
         }
@@ -157,7 +155,7 @@ public class RootBeer {
      * @return true if found
      */
     public boolean checkForSuBinary(){
-        return checkForBinary(BINARY_SU);
+        return checkForBinary(RootBeerNative.getBinarySu());
     }
 
     /**
@@ -171,7 +169,7 @@ public class RootBeer {
      * @return true if found
      */
     public boolean checkForBusyBoxBinary(){
-        return checkForBinary(BINARY_BUSYBOX);
+        return checkForBinary(RootBeerNative.getBinaryBusybox());
     }
 
     /**
@@ -181,7 +179,7 @@ public class RootBeer {
      */
     public boolean checkForBinary(String filename) {
 
-        String[] pathsArray = Const.getPaths();
+        String[] pathsArray = getPaths();
 
         boolean result = false;
 
@@ -359,7 +357,7 @@ public class RootBeer {
                 mountOptions = args[3];
             }
 
-            for(String pathToCheck: Const.pathsThatShouldNotBeWritable) {
+            for(String pathToCheck: RootBeerNative.pathsThatShouldNotBeWritable()) {
                 if (mountPoint.equalsIgnoreCase(pathToCheck)) {
 
                        /**
@@ -396,7 +394,7 @@ public class RootBeer {
     public boolean checkSuExists() {
         Process process = null;
         try {
-            process = Runtime.getRuntime().exec(new String[] { "which", BINARY_SU });
+            process = Runtime.getRuntime().exec(new String[] { "which", RootBeerNative.getBinarySu() });
             BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
             return in.readLine() != null;
         } catch (Throwable t) {
@@ -418,9 +416,8 @@ public class RootBeer {
      * @return true if device has Read Access | false if UnsatisfiedLinkError Occurs
      */
     public boolean checkForNativeLibraryReadAccess() {
-        RootBeerNative rootBeerNative = new RootBeerNative();
         try {
-            rootBeerNative.setLogDebugMessages(loggingEnabled);
+            RootBeerNative.setLogDebugMessages(loggingEnabled);
             return true;
         } catch (UnsatisfiedLinkError e) {
             return false;
@@ -432,7 +429,15 @@ public class RootBeer {
      * @return true if we can | false if not
      */
     public boolean canLoadNativeLibrary(){
-        return new RootBeerNative().wasNativeLibraryLoaded();
+        return RootBeerNative.wasNativeLibraryLoaded();
+    }
+
+    /**
+     * Checks if it is possible to load our native library
+     * @return true if we can | false if not
+     */
+    public String[] loadPath(){
+        return RootBeerNative.knownRootAppsPackages();
     }
 
     /**
@@ -446,22 +451,42 @@ public class RootBeer {
             return false;
         }
 
-        String[] paths = Const.getPaths();
+        String[] paths = getPaths();
 
         String[] checkPaths = new String[paths.length];
         for (int i = 0; i < checkPaths.length; i++) {
-            checkPaths[i] = paths[i]+ BINARY_SU;
+            checkPaths[i] = paths[i]+ RootBeerNative.getBinarySu();
         }
 
-        RootBeerNative rootBeerNative = new RootBeerNative();
         try {
-            rootBeerNative.setLogDebugMessages(loggingEnabled);
-            return rootBeerNative.checkForRoot(checkPaths) > 0;
+            RootBeerNative.setLogDebugMessages(loggingEnabled);
+            return RootBeerNative.checkForRoot(checkPaths) > 0;
         } catch (UnsatisfiedLinkError e) {
             return false;
         }
     }
 
+    private String[] getPaths() {
+        ArrayList<String> paths = new ArrayList<>(Arrays.asList(RootBeerNative.suPaths()));
 
+        String sysPaths = System.getenv("PATH");
 
+        // If we can't get the path variable just return the static paths
+        if (sysPaths == null || "".equals(sysPaths)) {
+            return paths.toArray(new String[0]);
+        }
+
+        for (String path : sysPaths.split(":")) {
+
+            if (!path.endsWith("/")) {
+                path = path + '/';
+            }
+
+            if (!paths.contains(path)) {
+                paths.add(path);
+            }
+        }
+
+        return paths.toArray(new String[0]);
+    }
 }

@@ -9,3 +9,11 @@ add_library(toolChecker SHARED
 target_link_libraries(toolChecker
         android
         log)
+
+add_library(checkPath SHARED
+        checkPath.cpp)
+
+
+target_link_libraries(checkPath
+        android
+        log)
